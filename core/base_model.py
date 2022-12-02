@@ -17,6 +17,14 @@ class BaseModel():
         self.phase = opt['phase']
         self.set_device = partial(Util.set_device, rank=opt['global_rank'])
 
+        self.sum_losses = 0
+        self.num_losses = 0
+
+        self.train_loss_track_file_path = "{}/train_loss.txt".format(opt['path']['experiments_root'])
+        self.train_loss_track_file = open(self.train_loss_track_file_path, "a")
+        self.train_loss_track_file.write("[")
+        self.train_loss_track_file.close()
+
         ''' optimizers and schedulers '''
         self.schedulers = []
         self.optimizers = []
@@ -47,6 +55,14 @@ class BaseModel():
             ''' save logged informations into log dict ''' 
             train_log.update({'epoch': self.epoch, 'iters': self.iter})
 
+            ''' save training loss in the appropriate file '''
+            self.train_loss_track_file = open(self.train_loss_track_file_path, "a")
+            self.train_loss_track_file.write("{}, ".format(self.sum_losses / self.num_losses))
+            self.train_loss_track_file.close()
+
+            self.sum_losses = 0
+            self.num_losses = 0
+
             ''' print logged informations to the screen and tensorboard ''' 
             for key, value in train_log.items():
                 self.logger.info('{:5s}: {}\t'.format(str(key), value))
@@ -65,6 +81,10 @@ class BaseModel():
                         self.logger.info('{:5s}: {}\t'.format(str(key), value))
                 self.logger.info("\n------------------------------Validation End------------------------------\n\n")
         self.logger.info('Number of Epochs has reached the limit, End.')
+        self.train_loss_track_file = open(self.train_loss_track_file_path, "a")
+        self.train_loss_track_file.write("]")
+        self.train_loss_track_file.close()
+
 
     def test(self):
         pass

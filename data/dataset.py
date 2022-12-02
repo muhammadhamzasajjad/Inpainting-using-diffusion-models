@@ -4,6 +4,7 @@ from PIL import Image
 import os
 import torch
 import numpy as np
+import pickle
 
 from .util.mask import (bbox2mask, brush_stroke_mask, get_irregular_mask, random_bbox, random_cropping_bbox)
 
@@ -12,12 +13,15 @@ IMG_EXTENSIONS = [
     '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
 ]
 
+
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in IMG_EXTENSIONS)
 
-def make_dataset(dir):
+def make_dataset(dir, mask_pickle_file):
+    #images = [i for i in np.load(dir)]
+    #return
     if os.path.isfile(dir):
-        images = [i for i in np.genfromtxt(dir, dtype=np.str, encoding='utf-8')]
+        images = [i for i in np.load(dir)]
     else:
         images = []
         assert os.path.isdir(dir), '%s is not a valid directory' % dir
@@ -26,15 +30,21 @@ def make_dataset(dir):
                 if is_image_file(fname):
                     path = os.path.join(root, fname)
                     images.append(path)
+    masks = []
+    if mask_pickle_file is not None:
+        with open(mask_pickle_file, 'rb') as pickle_file:
+            masks = pickle.load(pickle_file)
 
-    return images
+    return images, masks
 
 def pil_loader(path):
     return Image.open(path).convert('RGB')
+    #rtn = Image.fromarray(path)
+    #return rtn
 
 class InpaintDataset(data.Dataset):
-    def __init__(self, data_root, mask_config={}, data_len=-1, image_size=[256, 256], loader=pil_loader):
-        imgs = make_dataset(data_root)
+    def __init__(self, data_root, mask_config={}, data_len=-1, image_size=[28, 28], loader=pil_loader, mask_pickle_path=None):
+        imgs, self.masks = make_dataset(data_root, mask_pickle_path)
         if data_len > 0:
             self.imgs = imgs[:int(data_len)]
         else:
@@ -52,8 +62,10 @@ class InpaintDataset(data.Dataset):
     def __getitem__(self, index):
         ret = {}
         path = self.imgs[index]
+        
         img = self.tfs(self.loader(path))
-        mask = self.get_mask()
+        mask = self.get_mask()      # random mask for training
+        #mask = self.masks[index]   # constant mask loaded from tensor array file for testing
         cond_image = img*(1. - mask) + mask*torch.randn_like(img)
         mask_img = img*(1. - mask) + mask
 
@@ -61,7 +73,7 @@ class InpaintDataset(data.Dataset):
         ret['cond_image'] = cond_image
         ret['mask_image'] = mask_img
         ret['mask'] = mask
-        ret['path'] = path.rsplit("/")[-1].rsplit("\\")[-1]
+        ret['path'] = f'{index}_.png'
         return ret
 
     def __len__(self):

@@ -127,7 +127,7 @@ def brush_stroke_mask(img_shape,
                       num_vertices=(4, 12),
                       mean_angle=2 * math.pi / 5,
                       angle_range=2 * math.pi / 15,
-                      brush_width=(12, 40),
+                      brush_width=(2, 16),
                       max_loops=4,
                       dtype='uint8'):
     """Generate free-form mask.

@@ -15,6 +15,11 @@ def mae(input, target):
         output = loss(input, target)
     return output
 
+def mse(input, target):
+    with torch.no_grad():
+        loss = nn.MSELoss()
+        output = loss(input, target)
+    return output
 
 def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     """Computes the inception score of the generated images imgs

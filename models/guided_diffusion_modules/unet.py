@@ -529,6 +529,7 @@ class UNet(nn.Module):
         :param gammas: a 1-D batch of gammas.
         :return: an [N x C x ...] Tensor of outputs.
         """
+        #print("x", x.shape)
         hs = []
         gammas = gammas.view(-1, )
         emb = self.cond_embed(gamma_embedding(gammas, self.inner_channel))
@@ -537,9 +538,12 @@ class UNet(nn.Module):
         for module in self.input_blocks:
             h = module(h, emb)
             hs.append(h)
+            #print("input_block h",h.shape)
         h = self.middle_block(h, emb)
         for module in self.output_blocks:
-            h = torch.cat([h, hs.pop()], dim=1)
+            hs_pop = hs.pop()
+            #print(h.shape, hs_pop.shape)
+            h = torch.cat([h, hs_pop], dim=1)
             h = module(h, emb)
         h = h.type(x.dtype)
         return self.out(h)

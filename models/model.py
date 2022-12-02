@@ -3,6 +3,7 @@ import tqdm
 from core.base_model import BaseModel
 from core.logger import LogTracker
 import copy
+
 class EMA():
     def __init__(self, beta=0.9999):
         super().__init__()
@@ -102,18 +103,27 @@ class Palette(BaseModel):
         return self.results_dict._asdict()
 
     def train_step(self):
+        #print(self.netG)
         self.netG.train()
         self.train_metrics.reset()
-        for train_data in tqdm.tqdm(self.phase_loader):
+        tq = tqdm.tqdm(self.phase_loader)
+        for train_data in tq:
+            train_data = train_data
             self.set_input(train_data)
             self.optG.zero_grad()
+            #print(self.gt_image.shape, self.cond_image.shape, self.mask.shape)
             loss = self.netG(self.gt_image, self.cond_image, mask=self.mask)
             loss.backward()
             self.optG.step()
+            tq.set_postfix(loss = loss.item())
 
             self.iter += self.batch_size
             self.writer.set_iter(self.epoch, self.iter, phase='train')
             self.train_metrics.update(self.loss_fn.__name__, loss.item())
+
+            self.sum_losses += loss.item()
+            self.num_losses += 1
+
             if self.iter % self.opt['train']['log_iter'] == 0:
                 for key, value in self.train_metrics.result().items():
                     self.logger.info('{:5s}: {}\t'.format(str(key), value))

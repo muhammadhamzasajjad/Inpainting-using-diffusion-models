@@ -27,7 +27,7 @@ def main_worker(gpu, ngpus_per_node, opt):
     torch.backends.cudnn.enabled = True
     warnings.warn('You have chosen to use cudnn for accleration. torch.backends.cudnn.enabled=True')
     Util.set_seed(opt['seed'])
-
+    print("torch.cuda.get_device_name() = ",torch.cuda.get_device_name(0))
     ''' set logger '''
     phase_logger = InfoLogger(opt)
     phase_writer = VisualWriter(opt, phase_logger)  

@@ -12,6 +12,10 @@ class Network(BaseNetwork):
             from .sr3_modules.unet import UNet
         elif module_name == 'guided_diffusion':
             from .guided_diffusion_modules.unet import UNet
+        elif module_name == 'simple_unet':
+            from .simple_unet.unet import UNet
+        elif module_name == 'conv_res_unet':
+            from .conv_res_unet.unet import UNet
         
         self.denoise_fn = UNet(**unet)
         self.beta_schedule = beta_schedule
@@ -116,6 +120,7 @@ class Network(BaseNetwork):
             y_0=y_0, sample_gammas=sample_gammas.view(-1, 1, 1, 1), noise=noise)
 
         if mask is not None:
+            #print(torch.cat([y_cond, y_noisy*mask+(1.-mask)*y_0], dim=1).shape)
             noise_hat = self.denoise_fn(torch.cat([y_cond, y_noisy*mask+(1.-mask)*y_0], dim=1), sample_gammas)
             loss = self.loss_fn(mask*noise, mask*noise_hat)
         else:
